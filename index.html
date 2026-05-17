@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>RP Food Rechner</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fffd6b;
+  color: black;
+  font-family: Arial, sans-serif;
+}
+
+/* FIXED WIDTH */
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(4, 400px);
+  gap: 20px;
+}
+
+.container {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 0 15px rgba(255,255,255,0.08);
+}
+
+h2 {
+  text-align: center;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.controls {
+  display: flex;
+  gap: 4px;
+}
+
+button {
+  width: 32px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: #ffdf4a;
+  color: black;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+button:hover {
+  background: #fbe693;
+}
+
+.value {
+  width: 35px;
+  text-align: center;
+}
+
+.reset-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: #550000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  background: #880000;
+}
+
+.result {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.total {
+  font-weight: bold;
+}
+
+hr {
+  border: 0.5px solid #444;
+  margin: 10px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper" id="app"></div>
+
+<script>
+const products = [
+  ["Margarita", 150, "#dd1414"],
+  ["Peperoni", 180, "#dd1414"],
+  ["Salami", 180, "#dd1414"],
+  ["Tonno", 220, "#dd1414"],
+
+  ["Bolognese", 200, "#3e9b13"],
+  ["Penne al Forno", 200, "#3e9b13"],
+  ["Aglio Olio", 180, "#3e9b13"],
+
+  ["Pizza Brötchen", 100, "#c42ec2"],
+  ["Mozarella Sticks", 130, "#c42ec2"],
+
+  ["Cola", 125, "#38c2c2"],
+  ["Sprite", 100, "#38c2c2"],
+  ["Fanta", 100, "#38c2c2"],
+  ["Ice Tea Peach", 100, "#38c2c2"],
+
+  ["Bier", 100, "#8657d0"],
+  ["Radler", 90, "#8657d0"],
+  ["Rotwein", 120, "#8657d0"],
+  ["Weiswein", 120, "#8657d0"]
+
+  ["Cafe", 80, "#1e6b6e"],
+  ["Cappuccino", 80, "#1e6b6e"],
+  ["Latte Macchiato", 85, "#1e6b6e"],
+  ["Kakao", 50, "#1e6b6e"]
+];
+
+function createCalculator(id) {
+  let html = `<div class="container"><h2>Kunde ${id}</h2>`;
+
+  products.forEach((p, i) => {
+    html += `
+    <div class="item">
+      <span style="color:${p[2]}">${p[0]} (${p[1]}$)</span>
+      <div class="controls">
+        <button onclick="change('${id}-${i}', -10)">-10</button>
+        <button onclick="change('${id}-${i}', -1)">-</button>
+        <div class="value" id="${id}-${i}">0</div>
+        <button onclick="change('${id}-${i}', 1)">+</button>
+        <button onclick="change('${id}-${i}', 10)">+10</button>
+      </div>
+    </div>`;
+  });
+
+  html += `
+  <hr>
+  <div class="item">
+    <span>Rabatt (%)</span>
+    <div class="controls">
+      <button onclick="change('rabatt-${id}', -5)">-</button>
+      <div class="value" id="rabatt-${id}">0</div>
+      <button onclick="change('rabatt-${id}', 5)">+</button>
+    </div>
+  </div>
+
+  <div class="result" id="gesamt-${id}">Gesamt: 0$</div>
+  <div class="result total" id="endpreis-${id}">Endpreis: 0$</div>
+
+  <button class="reset-btn" onclick="resetCalc(${id})">Rechner leeren</button>
+
+  </div>`;
+
+  return html;
+}
+
+document.getElementById("app").innerHTML =
+  createCalculator(1) +
+  createCalculator(2) +
+  createCalculator(3) +
+  createCalculator(4);
+
+let values = {};
+
+function change(id, amount) {
+  if (!values[id]) values[id] = 0;
+
+  values[id] += amount;
+  if (values[id] < 0) values[id] = 0;
+
+  if (id.includes("rabatt") && values[id] > 100) values[id] = 100;
+
+  document.getElementById(id).innerText = values[id];
+  berechnen();
+}
+
+function resetCalc(k) {
+  products.forEach((_, i) => {
+    values[`${k}-${i}`] = 0;
+    document.getElementById(`${k}-${i}`).innerText = 0;
+  });
+
+  values[`rabatt-${k}`] = 0;
+  document.getElementById(`rabatt-${k}`).innerText = 0;
+
+  berechnen();
+}
+
+function berechnen() {
+  for (let k = 1; k <= 4; k++) {
+    let gesamt = 0;
+
+    products.forEach((p, i) => {
+      let val = values[`${k}-${i}`] || 0;
+      gesamt += val * p[1];
+    });
+
+    let rabatt = values[`rabatt-${k}`] || 0;
+    let endpreis = gesamt - (gesamt * rabatt / 100);
+
+    document.getElementById(`gesamt-${k}`).innerText =
+      "Gesamt: " + gesamt.toLocaleString() + "$";
+
+    document.getElementById(`endpreis-${k}`).innerText =
+      "Endpreis: " + endpreis.toLocaleString() + "$";
+  }
+}
+</script>
+
+</body>
+</html>
